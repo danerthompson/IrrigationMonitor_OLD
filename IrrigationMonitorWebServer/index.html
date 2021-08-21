@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+     integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+     crossorigin=""/>
+     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+     integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+     crossorigin=""></script>
+     <script src="https://npmcdn.com/leaflet-geometryutil"></script>
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+  <body style="background-color:rgb(45, 45, 48);">
+    <h1 style="color:white"> GPS Monitoring System</h1>
+    <p style="color:white">Made by Dane Thompson</p>
+    <div id="mapid" style="width:100%;height:350px;"></div>
+    <table style="width:100%;color:white">
+      <tr>
+        <td>Coordinates:</td>
+        <td><div id="latlon"></div></td>
+      </tr>
+      <tr>
+        <td>Last ping:</td>
+        <td><div id="datetime"></div></td>
+      </tr>
+      <tr>
+        <td>Battery:</td>
+        <td><div id="bat"></div></td>
+      </tr>
+      <tr>
+        <td> Azimuth:</td>
+        <td><div id ="azi"></div></td>
+      </tr>
+      <tr>
+        <td>Dev Mode:<input id="dev", type="checkbox"/></td>
+      </tr>
+    </table>
+
+    <p id="test", style="color:white"></p>
+    <br>
+    <p id="test2", style="color:white"> </p>
+    
+    <script>
+    
+    var mymap = L.map('mapid').setView([0, 0], 16);
+    myFunction();
+        L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    maxZoom: 18,
+    id: 'mapbox/streets-v11',
+    tileSize: 512,
+    zoomOffset: -1,
+    accessToken: 'pk.eyJ1IjoiZHRob21wc29uMzIxIiwiYSI6ImNrcWp5MmlwZTBlazYycXF0Y2pvcG9rNmcifQ._BMsia7G8rT4ux87ssSyxA'
+}).addTo(mymap);
+
+//Google satellite view
+L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
+    maxZoom: 20,
+    subdomains:['mt0','mt1','mt2','mt3']
+}).addTo(mymap);
+
+//Line
+//L.polyline([[39.79514, -97.84348],[39.79843, -97.84289]], {color: 'red'}).addTo(mymap);
+var layerGroup = L.layerGroup().addTo(mymap);
+    var inputVal;
+      var x = 0;
+      var lat = 0;
+      var lon = 0;
+      //var data;
+
+      setInterval(function() {
+        
+        loopFunction();
+      }, 2500);
+      
+      function receiveSpreadsheetData(inputVal) {
+        //markers.clearLayers();
+         mymap.setView(new L.latLng(inputVal.center_lat, inputVal.center_lon), 15)
+        
+         //clearLayers();
+         layerGroup.clearLayers();
+         layerGroup.addLayer(L.polyline([[inputVal.lati, inputVal.long],[inputVal.center_lat, inputVal.center_lon]], {color:'fuchsia'}).addTo(mymap));
+         var radiusLength = L.latLng(inputVal.lati, inputVal.long).distanceTo([inputVal.center_lat, inputVal.center_lon]);
+         layerGroup.addLayer(L.circle([inputVal.center_lat, inputVal.center_lon], {radius: radiusLength, color:'silver'}).addTo(mymap));
+         layerGroup.addTo(mymap);
+         //L.marker([inputVal.lati, inputVal.long]).addTo(mymap);
+        // L.marker([inputVal.center_lat, inputVal.center_lon], {title:"Center"}).addTo(mymap);
+      }
+      
+      function loopFunction() {
+        var checkbox = document.getElementById('dev');
+        if (checkbox.checked) {
+          devFunction();
+        }
+        else {
+          myFunction();
+        }
+      }
+
+      function myFunction() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (xhttp.readyState == 4 && xhttp.status == 200) {
+            var data = JSON.parse(xhttp.responseText);
+            //document.getElementById("test2").innerHTML = `Coords: ${data.lati}, ${data.long} Battery: ${data.bat} V`;
+            document.getElementById("latlon").innerHTML = `${data.lati}, ${data.long}`;
+            document.getElementById("datetime").innerHTML = data.datetime;
+            document.getElementById("bat").innerHTML = data.bat;
+            document.getElementById("azi").innerHTML = `${data.azi}&deg;`;
+            receiveSpreadsheetData(data);
+          }
+          
+        };
+        
+          xhttp.open("GET", "/update", true);
+          xhttp.send();
+          //document.getElementById("test2").innerHTML = xhttp.responseText;
+
+      } 
+
+      function devFunction() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (xhttp.readyState == 4 && xhttp.status == 200) {
+            var data = JSON.parse(xhttp.responseText);
+            //document.getElementById("test2").innerHTML = `Coords: ${data.lati}, ${data.long} Battery: ${data.bat} V`;
+            document.getElementById("latlon").innerHTML = `${data.lati}, ${data.long}`;
+            document.getElementById("datetime").innerHTML = data.datetime;
+            document.getElementById("bat").innerHTML = data.bat;
+            document.getElementById("azi").innerHTML = `${data.azi}&deg;`;
+            receiveSpreadsheetData(data);
+            
+          }
+          
+        };
+    
+          xhttp.open("GET", "/dev", true);
+          xhttp.send();
+      }
+       
+        
+    </script>
+    
+  
+  </body>
+</html>
+
+
