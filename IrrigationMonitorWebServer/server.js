@@ -131,7 +131,7 @@ function calculateAzimuth(currentCoords, centerCoords) {
 
     var azi = Math.atan(x_azi / y_azi) * 180.0 / Math.PI;
     if (x_azi < 0) {
-        azi = 360 - azi;
+        azi = 360 + azi;
     }
 
     console.log(`Azimuth: ${azi} X: ${x_azi} Y: ${y_azi}`);
@@ -168,12 +168,14 @@ async function addToSheet(request) {
     var currCoords = [sheet.getCell(rowNum-1, 2).value, sheet.getCell(rowNum-1, 3).value]
     var azimuth = calculateAzimuth(currCoords, centCoords);
 
+    /*
     for (var i = 0; i < 3; i++) {
         console.log(`${cartPoints[i]}`);
     }
     console.log(`${yCent / earthRadius} , ${xCent / earthRadius}`);
     console.log(`${coords[0]}`);
     console.log(`${centLat} , ${centLon}`);
+    */
 
     await sheet.addRow({
         Datetime: request.query.dateTime, 
