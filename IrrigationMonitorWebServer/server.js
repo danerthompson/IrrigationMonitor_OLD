@@ -14,16 +14,11 @@ const port = creds.port;
 var earthRadius = 6369600.0
 
 function haversine(coords1, coords2) {
-    //Convert degrees to radians
-    for (let i = 0; i < 2; i++) {
-        coords1[i] *= Math.PI / 180.0;
-        coords2[i] *= Math.PI / 180.0; 
-    }
-
-    var lat1 = coords1[0];
-    var lat2 = coords2[0];
-    var lon1 = coords1[1];
-    var lon2 = coords2[1];
+    //Convert degrees to radians  
+    var lat1 = coords1[0] * Math.PI / 180.0;
+    var lat2 = coords2[0] * Math.PI / 180.0;
+    var lon1 = coords1[1] * Math.PI / 180.0;
+    var lon2 = coords2[1] * Math.PI / 180.0;
 
     var dlat = lat2 - lat1; // difference in latitudes
     var dlon = lon2 - lon1; // difference in longitudes
@@ -51,8 +46,8 @@ function calculateCenter(sheet, rowNum) {
     var coords = Array(3);
     var cartPoints = Array(3);
     for (let i = rowNum-3; i < rowNum; i++) {
-        var degLat = sheet.getCell(i,2).value * Math.PI / 180;
-        var degLon = sheet.getCell(i,3).value * Math.PI / 180;
+        var degLat = sheet.getCell(i,2).value;
+        var degLon = sheet.getCell(i,3).value;
 
         coords[i - rowNum + 3] = [degLat, degLon];
     }
@@ -76,8 +71,11 @@ function calculateCenter(sheet, rowNum) {
     else {
         xMultiplier = 1.0;
     }
-    var x1 = haversine(coords[0], [coords[0][0], coords[1][1]]) * xMultiplier; // Same lats
+
+
+    var x1 = haversine(coords[0], [coords[0][0], coords[1][1]] ) * xMultiplier; // Same lats
     var y1 = haversine(coords[0], [coords[1][0], coords[0][1]]) * yMultiplier; // Same lons
+
     cartPoints[1] = [x1, y1];
 
     if (coords[2][0] < coords[0][0]) {
@@ -111,7 +109,8 @@ function calculateCenter(sheet, rowNum) {
 
 function calculateAzimuth(currentCoords, centerCoords) {
     //Calculating azimuth:
-   
+   console.log(`Current: ${currentCoords}`);
+   console.log(`Center: ${centerCoords}`);
     if (currentCoords[0] < centerCoords[0]) {
         yMultiplier = -1.0;
     }
@@ -129,11 +128,12 @@ function calculateAzimuth(currentCoords, centerCoords) {
     var x_azi = haversine(centerCoords, [centerCoords[0], currentCoords[1]]) * xMultiplier; // Same lats
     var y_azi = haversine(centerCoords, [currentCoords[0], centerCoords[1]]) * yMultiplier; // Same lons
 
-    var azi = Math.atan(x_azi / y_azi) * 180.0 / Math.PI;
-    if (x_azi < 0) {
-        azi = 360 + azi;
+    var azi = Math.atan(y_azi / x_azi) * 180.0 / Math.PI;
+    if (x_azi < 0) { 
+        azi -= 180.0;
     }
-
+    azi = 90 - azi;
+  
     console.log(`Azimuth: ${azi} X: ${x_azi} Y: ${y_azi}`);
     return azi;
 }
@@ -165,17 +165,12 @@ async function addToSheet(request) {
     centLat = 39.79514;
     centLon = -97.843487;
 
-    var currCoords = [sheet.getCell(rowNum-1, 2).value, sheet.getCell(rowNum-1, 3).value]
+    centCoords = [centLat, centLon];
+
+    var currCoords = [request.query.lat, request.query.lon];
     var azimuth = calculateAzimuth(currCoords, centCoords);
 
-    /*
-    for (var i = 0; i < 3; i++) {
-        console.log(`${cartPoints[i]}`);
-    }
-    console.log(`${yCent / earthRadius} , ${xCent / earthRadius}`);
-    console.log(`${coords[0]}`);
-    console.log(`${centLat} , ${centLon}`);
-    */
+  
 
     await sheet.addRow({
         Datetime: request.query.dateTime, 
