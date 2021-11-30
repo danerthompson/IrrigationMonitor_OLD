@@ -144,6 +144,8 @@ async function addToSheet(request) {
         private_key: creds.private_key,
     });
     await doc.loadInfo();
+
+    console.log(doc.sheetsByTitle);
     const sheet = doc.sheetsByIndex[0];
     
     const rowNum = sheet.rowCount;
@@ -185,7 +187,7 @@ async function addToSheet(request) {
         Azimuth: Math.round(azimuth)});
 }
 
-async function accessSheetData(response) {
+async function accessSheetData(request, response) {
     await doc.useServiceAccountAuth({
         client_email: creds.client_email,
         private_key: creds.private_key,
@@ -194,6 +196,7 @@ async function accessSheetData(response) {
     await doc.loadInfo();
 
     const sheet = doc.sheetsByIndex[0];
+    const sheet = doc.sheetsByTitle[request.query.field]
    
     const rowNum = sheet.rowCount;
     await sheet.loadCells(`A${rowNum}:J${rowNum}`);
@@ -232,12 +235,12 @@ app.get('/vars', (req, res) => {
 app.get('/update', (req, res) => {
     console.log("Sent data");
     //res.send(sheet.rowCount);
-    accessSheetData(res);
+    accessSheetData(req, res);
 });
 
 app.get('/dev', (req, res) => {
     console.log("Sent data (dev mode)");
-    accessSheetData(res);
+    accessSheetData(req, res);
 });
 
 app.listen(port, "0.0.0.0", () => {
