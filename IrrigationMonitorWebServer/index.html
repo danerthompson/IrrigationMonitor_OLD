@@ -15,8 +15,7 @@
     <h1 style="color:white"> GPS Monitoring System</h1>
     <p style="color:white">Made by Dane Thompson</p>
     <select id="fields">
-      <option value="ESP32_1">ESP32_1</option>
-      <option value="devField">devField</option>
+      <option value=ESP32_1>ESP32_1</option>
     </select>
     <div id="mapid" style="width:100%;height:350px;"></div>
     <table style="width:100%;color:white">
@@ -103,6 +102,32 @@ var layerGroup = L.layerGroup().addTo(mymap);
         }
       }
 
+      /*
+      function makeFieldList() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function() {
+          if (xhttp.readyState == 4 && xhttp.status == 200) {
+            var fieldList = JSON.parse(xhttp.responseText);
+            var select = document.createElement("select");
+            for (const val of fieldList) {
+              var option = document.createElement("option");
+              option.val = val;
+              option.text = val;
+              select.appendChild(option);
+            }
+            document.body.insertBefore(select, document.getElementById("mapid");
+
+
+          }
+          
+        };
+        
+          xhttp.open("GET", "/fieldList", true);
+          xhttp.send();
+          //document.getElementById("test2").innerHTML = xhttp.responseText;
+
+      }*/
+
       function myFunction(sheet) {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
@@ -113,12 +138,30 @@ var layerGroup = L.layerGroup().addTo(mymap);
             document.getElementById("datetime").innerHTML = data.datetime;
             document.getElementById("bat").innerHTML = data.bat;
             document.getElementById("azi").innerHTML = `${data.azi}&deg;`;
+
+            // Make field list
+            var select = document.getElementById("fields");
+            fieldLoop:
+            for (const val of data.fieldList) {                           // Loop through each field
+              var option = document.createElement("option");
+              option.value = val;
+              option.text = val;
+              
+              for (let optionIndex in select.options) {                   // Check for existing fields
+                if (select.options[optionIndex].value == option.value) {  // If duplicate break from loop
+                  continue fieldLoop;
+                }
+              }
+              
+              select.add(option);                                 // Add field to list
+
+            }
             receiveSpreadsheetData(data);
           }
           
         };
         
-          xhttp.open("GET", `/pivot/update/?field=${sheet}`, true);
+          xhttp.open("GET", `/update/?field=${sheet}`, true);
           xhttp.send();
           //document.getElementById("test2").innerHTML = xhttp.responseText;
 
@@ -140,7 +183,7 @@ var layerGroup = L.layerGroup().addTo(mymap);
           
         };
     
-        xhttp.open("GET", `/pivot/dev/?field=${sheet}`, true);
+        xhttp.open("GET", `/dev/?field=${sheet}`, true);
           xhttp.send();
       }
        

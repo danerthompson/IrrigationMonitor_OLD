@@ -146,7 +146,23 @@ async function addToSheet(request) {
     await doc.loadInfo();
 
     console.log(doc.sheetsByTitle);
-    const sheet = doc.sheetsByIndex[0];
+    //const sheet = doc.sheetsByIndex[0];
+    // Make list of sheet names
+    var sheetExists = false;
+    for (var key in doc.sheetsByTitle) {
+        if (request.query.id == key) {
+            sheetExists = true;
+        }
+    }    
+    if (sheetExists == false) {
+        var sheet = await doc.addSheet();
+        await Promise.all([sheet.updateProperties({title: request.query.id}),
+                            sheet.setHeaderRow(["Datetime", "UniqueID", "Latitude", "Longitude", "CenterLat", "CenterLon", "Battery", "Speed", "Alt", "Azimuth"]),
+                            sheet.resize({rowCount:1, columnCount:10})]);
+    } else {
+        var sheet = doc.sheetsByTitle[request.query.id];
+    }
+
     
     const rowNum = sheet.rowCount;
     await sheet.loadCells(`A1:J${rowNum}`);
@@ -159,18 +175,25 @@ async function addToSheet(request) {
     } //Keep center the same as previous
     */
 
-    var centCoords = calculateCenter(sheet, rowNum);
-    var centLat = centCoords[0];
-    var centLon = centCoords[1];
+    if (rowNum > 3) {
+        var centCoords = calculateCenter(sheet, rowNum);
+        var centLat = centCoords[0];
+        var centLon = centCoords[1];
+    
+        //Temporary
+        centLat = 39.79514;
+        centLon = -97.843487;
+    
+        centCoords = [centLat, centLon];
+    
+        var currCoords = [request.query.lat, request.query.lon];
+        var azimuth = calculateAzimuth(currCoords, centCoords);
+    } else {
+        var centLat = null;
+        var centLon = null;
+        var azimuth = null;
+    }
 
-    //Temporary
-    centLat = 39.79514;
-    centLon = -97.843487;
-
-    centCoords = [centLat, centLon];
-
-    var currCoords = [request.query.lat, request.query.lon];
-    var azimuth = calculateAzimuth(currCoords, centCoords);
 
   
 
@@ -193,11 +216,20 @@ async function accessSheetData(request, response) {
         private_key: creds.private_key,
     });
 
-    await doc.loadInfo();
+    
 
-    const sheet = doc.sheetsByIndex[0];
-    const sheet = doc.sheetsByTitle[request.query.field]
-   
+    await doc.loadInfo();
+    const sheet = doc.sheetsByTitle[request.query.field];
+
+    // Make list of sheet names
+    const sheetList = [];
+    let sheetIndex = 0;
+    for (var key in doc.sheetsByTitle) {
+       sheetList[sheetIndex] = key;
+       sheetIndex++;
+    }
+
+
     const rowNum = sheet.rowCount;
     await sheet.loadCells(`A${rowNum}:J${rowNum}`);
     const data = {
@@ -210,9 +242,13 @@ async function accessSheetData(request, response) {
         bat: sheet.getCell(rowNum-1, 6).value,
         speed: sheet.getCell(rowNum-1, 7).value,
         alt: sheet.getCell(rowNum-1, 8).value,
-        azi: sheet.getCell(rowNum-1, 9).value};
+        azi: sheet.getCell(rowNum-1, 9).value,
+        fieldList: sheetList};
+    
     response.send(data);
+    console.log(data);
 }
+
 
 //accessSpreadsheet();
 
