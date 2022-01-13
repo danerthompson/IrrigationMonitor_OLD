@@ -13,6 +13,7 @@ const port = creds.port;
 // radius of earth in meters
 var earthRadius = 6369600.0
 
+// Function that takes spherical coordinates of earth and calculates distance between them using Haversine formula
 function haversine(coords1, coords2) {
     //Convert degrees to radians  
     var lat1 = coords1[0] * Math.PI / 180.0;
@@ -33,6 +34,7 @@ function haversine(coords1, coords2) {
     return d; // in meters
 } // End of haversine
 
+// Function that calculates center of circle in Cartesian plane using bisection of three points
 function calculateCenter(sheet, rowNum) {
     //Calculating center coords
     
@@ -58,6 +60,7 @@ function calculateCenter(sheet, rowNum) {
     var xMultiplier;
     var yMultiplier;
 
+    // Choose sign of x1,y1 coordinates
     if (coords[1][0] < coords[0][0]) {
         yMultiplier = -1.0;
     }
@@ -71,13 +74,11 @@ function calculateCenter(sheet, rowNum) {
     else {
         xMultiplier = 1.0;
     }
-
-
     var x1 = haversine(coords[0], [coords[0][0], coords[1][1]] ) * xMultiplier; // Same lats
     var y1 = haversine(coords[0], [coords[1][0], coords[0][1]]) * yMultiplier; // Same lons
-
     cartPoints[1] = [x1, y1];
 
+    // Choose sign of x2,y2 coordinates
     if (coords[2][0] < coords[0][0]) {
         yMultiplier = -1.0;
     }
@@ -95,20 +96,23 @@ function calculateCenter(sheet, rowNum) {
     var y2 = haversine(coords[0], [coords[2][0], coords[0][1]]) * yMultiplier; // Same lons
     cartPoints[2] = [x2, y2];
 
+    // Calculate center Cartesian coordinates
     var xCent = (x2*x2/(2.0*y2) - x1*x1/(2.0*y1) + y2/2.0 - y1/2.0) / (x2/y2 - x1/y1);
     var yCent = (-x1/y1) * (xCent - x1/2.0) + y1/2.0;
 
     //To calculate difference in angles, find vert. and horiz. distance of center from origin then use theta = d / r to calculate change in theta and add to lat/lon
     //To determine whether theta is +/-, check the direction the center is from origin
     
+    // Convert Cartesian coordinates to spherical earth coordinates
     var centLat = yCent / earthRadius * 180.0 / Math.PI + coords[0][0];
     var centLon = xCent / earthRadius * 180.0 / Math.PI + coords[0][1];
     
     return [centLat, centLon];
 } //End of calculate center
 
+
+// Function that calculates azimuth (angle) between current pivot location and center tower
 function calculateAzimuth(currentCoords, centerCoords) {
-    //Calculating azimuth:
    console.log(`Current: ${currentCoords}`);
    console.log(`Center: ${centerCoords}`);
     if (currentCoords[0] < centerCoords[0]) {
@@ -194,9 +198,6 @@ async function addToSheet(request) {
         var azimuth = null;
     }
 
-
-  
-
     await sheet.addRow({
         Datetime: request.query.dateTime, 
         UniqueID: request.query.id, 
@@ -216,8 +217,6 @@ async function accessSheetData(request, response) {
         private_key: creds.private_key,
     });
 
-    
-
     await doc.loadInfo();
     const sheet = doc.sheetsByTitle[request.query.field];
 
@@ -228,7 +227,6 @@ async function accessSheetData(request, response) {
        sheetList[sheetIndex] = key;
        sheetIndex++;
     }
-
 
     const rowNum = sheet.rowCount;
     await sheet.loadCells(`A${rowNum}:J${rowNum}`);
@@ -250,12 +248,12 @@ async function accessSheetData(request, response) {
 }
 
 
-//accessSpreadsheet();
-
+// Push page to client
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '/index.html'));
 });
 
+// Receive data from field unit
 app.get('/vars', (req, res) => {
     res.send('900'); // Return how many seconds for the unit to sleep
     addToSheet(req);
@@ -268,11 +266,13 @@ app.get('/vars', (req, res) => {
     console.log(req.query.alt);
 });
 
+// Update map data to client
 app.get('/update', (req, res) => {
     console.log("Sent data");
     //res.send(sheet.rowCount);
     accessSheetData(req, res);
 });
+
 
 app.get('/dev', (req, res) => {
     console.log("Sent data (dev mode)");

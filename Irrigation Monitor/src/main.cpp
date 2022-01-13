@@ -348,9 +348,9 @@ void setup() {
     modem_initialize();
     apiCall();
   }
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);  // Configures ESP32 to sleep for TIME_TO_SLEEP number of seconds
   delay(100);
-  esp_deep_sleep_start();
+  esp_deep_sleep_start(); // Begins configured sleep
 }
 
 
